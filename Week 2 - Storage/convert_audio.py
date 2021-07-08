@@ -1,12 +1,11 @@
 import sys
-import pandas as pd
 from os import path
 from pydub import AudioSegment
 
 def create_convert_list(s3):
-    mpeg_list = ['file_1.mp3', 'file_2.mp3']
-    # for obj in s3.Bucket('mpeg-sound').objects.all():
-    #     mpeg_list.append(obj.key)
+    mpeg_list = list()
+    for obj in s3.Bucket('mpeg-sound').objects.all():
+        mpeg_list.append(obj.key)
     return mpeg_list
 
 def audio_convert(src):
