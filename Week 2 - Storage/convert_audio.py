@@ -16,6 +16,8 @@ def create_convert_list(s3):
         - ฟังก์ชั่นจะดึงข้อมูลเฉพาะไฟล์ที่มีสกุลลงท้ายด้วย .mp3 เท่านั้น
         - ถ้าใช้ OSX หรือ MacOS จะเกิด error ขึ้นเนื่องจากหา package ffmpeg ไม่เจอให้ดูเพิ่มเติมจากในนี้ครับ
             https://stackoverflow.com/questions/56739322/pydub-cant-find-ffmpeg-although-its-installed-and-in-path
+        - สำหรับบน EC2 ที่เป็น AMI ดูเพิ่มเติมได้ที่
+            https://maskaravivek.medium.com/how-to-install-ffmpeg-on-ec2-running-amazon-linux-451e4a8e2694
     """
     mpeg_list = list()
     for obj in s3.Bucket(mpeg_bucket).objects.all():
