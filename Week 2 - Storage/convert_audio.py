@@ -2,10 +2,7 @@ import sys
 from os import path
 from pydub import AudioSegment
 
-# ในกรณีที่ต้องการเปลี่ยนชื่อ bucket
-mpeg_bucket, wav_bucket = 'mpeg-sound', 'wav-sound'
-
-def create_convert_list(s3):
+def create_convert_list(s3, mpeg_bucket):
     """
     ใช้สร้างลิสท์ที่ใช้ในการเก็บชื่อไฟล์ mpeg ที่อยู่ใน s3 ทั้งหมด
 

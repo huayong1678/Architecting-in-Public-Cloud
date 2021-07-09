@@ -27,7 +27,7 @@ def sound_etl():
         Notes:
             ดูข้อมูลเพิ่มเติมได้ที่ https://boto3.amazonaws.com/v1/documentation/api/1.9.42/guide/s3-example-download-file.html
         """
-        mpeg_list = ca.create_convert_list(s3)
+        mpeg_list = ca.create_convert_list(s3, mpeg_bucket)
         try:
             print("Downloading file(s)...")
             for i in range(len(mpeg_list)):
