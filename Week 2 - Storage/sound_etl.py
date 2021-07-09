@@ -32,6 +32,7 @@ def sound_etl():
             print("Downloading file(s)...")
             for i in range(len(mpeg_list)):
                 des, src = "mpeg-sound/" + mpeg_list[i], mpeg_list[i]
+                # บรรทัดนี้จะเป็นคำสั่งในการโหลดไฟล์จาก S3
                 s3.Bucket(mpeg_bucket).download_file(src, des)
             print("Download Completed.")
         except botocore.exceptions.ClientError as e:
@@ -81,6 +82,7 @@ def sound_etl():
             print("Uploading file(s)...")
             for i in range(len(wav_list)):
                 src = "wav-sound/" + wav_list[i]
+                # บรรทัดนี้จะเป็นคำสั่งในการโหลดไฟล์ขึ้น S3
                 s3.Bucket(wav_bucket).upload_file(src, wav_list[i])
             print("Upload Completed.")
         except ClientError as e:
