@@ -1,9 +1,9 @@
 <?php
 
 define('DB_SERVER', 'db_instance_endpoint');
-define('DB_USERNAME', 'tutorial_user');
-define('DB_PASSWORD', 'master password');
-define('DB_DATABASE', 'sample');
+define('DB_USERNAME', 'db_user');
+define('DB_PASSWORD', 'master_password');
+define('DB_DATABASE', 'database_name');
 
 ?>
                 
