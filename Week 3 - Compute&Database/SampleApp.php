@@ -35,7 +35,7 @@ include "../inc/dbinfo.inc";
   $employee_job = htmlentities($_POST['JOB']);
 
   if (strlen($employee_name) && strlen($employee_salary)) {
-    AddEmployee($connection, $employee_name, $employee_salary);
+    AddEmployee($connection, $employee_name, $employee_salary, $employee_job);
   }
   
 ?>
@@ -50,7 +50,7 @@ include "../inc/dbinfo.inc";
 
         <div class="col">
         <label for="SALARY">Salary:</label>
-        <input class="form-control" type="text" name="SALARY"/>
+        <input class="form-control" type="number" name="SALARY"/>
         </div>
 
         <div class="col">
