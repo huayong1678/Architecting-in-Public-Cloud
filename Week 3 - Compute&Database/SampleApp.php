@@ -9,13 +9,13 @@ include "../inc/dbinfo.inc";
       <meta charset="UTF-8">
       <meta http-equiv="X-UA-Compatible" content="IE=edge">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Employee Information | Sample App</title>
+      <title>Employee Information</title>
       <!-- Latest compiled and minified CSS -->
       <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   </head>
   <body>
     <div class="container">
-    <div class="jumbotron"><h1>🧑‍💻 Employee Information | Sample App</h1></div>
+    <div class="jumbotron"><h1>🧑‍💻 Employee Information</h1></div>
 <?php
   
 
