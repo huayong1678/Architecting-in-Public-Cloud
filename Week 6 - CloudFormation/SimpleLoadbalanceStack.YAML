@@ -2,3 +2,165 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: "A Sample YAML for CloudFormation in Module 6"
 
 Resources:
+
+  SimpleVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "10.0.0.0/16" # Required
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: "String"
+      Tags:
+        - Key: "Name"
+          Value: "simple-VPC"
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AssignIpv6AddressOnCreation: false
+      AvailabilityZone: "us-east-1a"
+      CidrBlock: "10.0.0.0/24" # Required
+      Tags:
+        - Key: "Name"
+          Value: "public-subnet-1"
+      VpcId: "SimpleVPC" # Required
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AssignIpv6AddressOnCreation: false
+      AvailabilityZone: "us-east-1b"
+      CidrBlock: "10.0.1.0/24" # Required
+      Tags:
+        - Key: "Name"
+          Value: "public-subnet-1"
+      VpcId: "SimpleVPC" # Required
+
+  SimpleIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: "Name"
+          Value: "simple-internetgateway"
+
+  SimpleIGWAttach:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref SimpleIGW
+      VpcId: !Ref SimpleVPC
+
+  SimpleRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref SimpleVPC
+
+  RouteToIGW:
+    Type: AWS::EC2::Route
+    DependsOn: AwesomeSiteIGW
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref SimpleIGW
+      RouteTableId: !Ref SimpleRouteTable
+
+  Public1SNRouteTableCon:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref SimpleRouteTable
+
+  Public2SNRouteTableCon:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: 
+        Ref: 'SimpleRouteTable'
+
+  AllowWebAndSSHForSimpleSubnet:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Allow Web And SSH For Public Subnet Instances" # Required
+      GroupName: "simple-subnet-sg"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        # - IpProtocol: -1
+        #   SourceSecurityGroupId: !Ref AllowWebAndSSHForPublicSubnet
+      VpcId: !Ref SimpleVPC
+
+  SimpleWebServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      AdditionalInfo: "String"
+      Affinity: "String"
+      AvailabilityZone: "String"
+      BlockDeviceMappings:
+        BlockDeviceMappings
+      CpuOptions:
+        CoreCount: Number
+        ThreadsPerCore: Number
+      CreditSpecification:
+        CPUCredits: "Number"
+      DisableApiTermination: false
+      EbsOptimized: false
+      ElasticGpuSpecifications:
+        ElasticGpuSpecifications
+      ElasticInferenceAccelerators:
+        ElasticInferenceAccelerators
+      EnclaveOptions:
+        Enabled: false
+      HibernationOptions:
+        Configured: false
+      HostId: "String"
+      HostResourceGroupArn: "String"
+      IamInstanceProfile: "String"
+      ImageId: "String"
+      InstanceInitiatedShutdownBehavior: "String"
+      InstanceType: "String"
+      Ipv6AddressCount: Number
+      Ipv6Addresses:
+        Ipv6Addresses
+      KernelId: "String"
+      KeyName: "String"
+      LaunchTemplate:
+        LaunchTemplateId: "String"
+        LaunchTemplateName: "String"
+        Version: "String"
+      LicenseSpecifications:
+        LicenseSpecifications
+      Monitoring: String
+      NetworkInterfaces:
+        NetworkInterfaces
+      PlacementGroupName: "String"
+      PrivateIpAddress: "String"
+      RamdiskId: "String"
+      SecurityGroupIds:
+        SecurityGroupIds
+      SecurityGroups:
+        SecurityGroups
+      SourceDestCheck: false
+      SsmAssociations:
+        SsmAssociations
+      SubnetId: "String"
+      Tags:
+        Tags
+      Tenancy: "String"
+      UserData: "String"
+      Volumes:
+        Volumes
+
+  MyLoadBalancer:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      AvailabilityZones:
+        - "us-east-1a"
+        - "us-east-1b"
+      Listeners:
+        - LoadBalancerPort: "80"
+          InstancePort: "80"
+          Protocol: HTTP
