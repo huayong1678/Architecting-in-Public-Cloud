@@ -100,7 +100,7 @@ Resources:
       ImageId: ami-7a11e213
       Tags:
         - Key: Name
-          Value: My EC2 Instance
+          Value: Webserver 1
       NetworkInterfaces:
         - AssociatePublicIpAddress: 'true'
           DeviceIndex: '0'
@@ -116,7 +116,7 @@ Resources:
         ImageId: ami-7a11e213
         Tags:
           - Key: Name
-            Value: My EC2 Instance
+            Value: Webserver 2
         NetworkInterfaces:
           - AssociatePublicIpAddress: 'true'
             DeviceIndex: '0'
