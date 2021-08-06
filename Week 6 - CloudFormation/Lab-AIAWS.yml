@@ -1,0 +1,141 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "A Sample YAML for create Module 5 with CloudFormation in Module 6"
+
+Resources:
+
+  # Network - VPC
+  # It does create default route table
+  AwesomeSiteVPC:
+    Type: AWS::EC2::VPC
+    Properties: 
+      CidrBlock: "172.16.0.0/16"
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags: 
+        - Key: "Name"
+          Value: "AwesomeSite-VPC"
+  # Network - Public Subnet
+  Public1AwesomeSiteSN:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref AwesomeSiteVPC
+      CidrBlock: "172.16.0.0/24"
+      AvailabilityZone: "us-east-1a"
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: "Name"
+          Value: "AwesomeSite-Public1-SN"
+  Public2AwesomeSiteSN:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref AwesomeSiteVPC
+      CidrBlock: "172.16.2.0/24"
+      AvailabilityZone: "us-east-1b"
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: "Name"
+          Value: "AwesomeSite-Public2-SN"
+  # Network - Private Subnet
+  Private1AwesomeSiteSN:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref AwesomeSiteVPC
+      CidrBlock: "172.16.1.0/24"
+      AvailabilityZone: "us-east-1a"
+      Tags:
+        - Key: "Name"
+          Value: "AwesomeSite-Private1-SN"
+  Private2AwesomeSiteSN:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref AwesomeSiteVPC
+      CidrBlock: "172.16.3.0/24"
+      AvailabilityZone: "us-east-1b"
+      Tags:
+        - Key: "Name"
+          Value: "AwesomeSite-Private2-SN"
+
+  # Network - Internet Gateway
+  AwesomeSiteIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: "Name"
+          Value: "AwesomeSite-IGW"
+  AwesomeSiteIGWAttach:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref AwesomeSiteIGW
+      VpcId: !Ref AwesomeSiteVPC
+
+  # Network - Route Tables
+  PublicSubnetRouteTable: # for Public Subnet
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref AwesomeSiteVPC
+
+  # Network - Routes
+  RouteToIGW:
+    Type: AWS::EC2::Route
+    DependsOn: AwesomeSiteIGW
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref AwesomeSiteIGW
+      RouteTableId: !Ref PublicSubnetRouteTable
+
+  # Network - Route Table Association
+  Public1SNRouteTableCon: # for Public Subnet 1
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Public1AwesomeSiteSN
+      RouteTableId: !Ref PublicSubnetRouteTable
+  Public2SNRouteTableCon: # for Public Subnet 2
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Public2AwesomeSiteSN
+      RouteTableId: 
+        Ref: PublicSubnetRouteTable
+
+  # Security - Security Groups
+  AllowWebAndSSHForPublicSubnet: # Public Subnet
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Allow Web And SSH For Public Subnet Instances" # Required
+      GroupName: "AwesomeSite-PublicSN-SG"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        # - IpProtocol: -1
+        #   SourceSecurityGroupId: !Ref AllowWebAndSSHForPublicSubnet
+      VpcId: !Ref AwesomeSiteVPC
+  AllowMySQLPrivateSubnet: # Private Subnet
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Allow MySQL request from Public Subnet" # Required
+      GroupName: "AwesomeSite-PrivateSN-SG"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !Ref AllowWebAndSSHForPublicSubnet
+        # - IpProtocol: -1
+        #   SourceSecurityGroupId: !Ref AllowMySQLPrivateSubnet
+      VpcId: !Ref AwesomeSiteVPC
+  AllowLocalInPublicSubnetSG:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AllowWebAndSSHForPublicSubnet
+      IpProtocol: -1 # Required
+      SourceSecurityGroupId: !Ref AllowWebAndSSHForPublicSubnet
+  AllowLocalInPrivateSubnetSG:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AllowMySQLPrivateSubnet
+      IpProtocol: -1 # Required
+      SourceSecurityGroupId: !Ref AllowMySQLPrivateSubnet
