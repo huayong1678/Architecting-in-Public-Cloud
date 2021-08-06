@@ -94,7 +94,7 @@ Resources:
     Properties:
       SubnetId: !Ref Public2AwesomeSiteSN
       RouteTableId: 
-        Ref: PublicSubnetRouteTable
+        Ref: 'PublicSubnetRouteTable'
 
   # Security - Security Groups
   AllowWebAndSSHForPublicSubnet: # Public Subnet
