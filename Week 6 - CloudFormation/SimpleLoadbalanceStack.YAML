@@ -1,85 +1,92 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: "A Sample YAML for CloudFormation in Module 6"
 
+Parameters:
+  AmazonLinuxFreeTierAMI:
+    Description: "Amazon Linux 2 AMI Free tier eligible"
+    Type: AWS::EC2::Image::Id
+    Default: ami-0c2b8ca1dad447f8a
+
 Resources:
 
+  # Network - VPC
   SimpleVPC:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: "10.0.0.0/16" # Required
       EnableDnsHostnames: true
       EnableDnsSupport: true
-      InstanceTenancy: "String"
       Tags:
         - Key: "Name"
           Value: "simple-VPC"
 
+  # Network - Subnets
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      AssignIpv6AddressOnCreation: false
       AvailabilityZone: "us-east-1a"
       CidrBlock: "10.0.0.0/24" # Required
+      MapPublicIpOnLaunch: true
       Tags:
         - Key: "Name"
           Value: "public-subnet-1"
-      VpcId: "SimpleVPC" # Required
-
+      VpcId: !Ref SimpleVPC # Required
   PublicSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
-      AssignIpv6AddressOnCreation: false
       AvailabilityZone: "us-east-1b"
       CidrBlock: "10.0.1.0/24" # Required
+      MapPublicIpOnLaunch: true
       Tags:
         - Key: "Name"
           Value: "public-subnet-1"
-      VpcId: "SimpleVPC" # Required
+      VpcId: !Ref SimpleVPC # Required
 
+  # Network - Internet Gateway
   SimpleIGW:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: "Name"
           Value: "simple-internetgateway"
-
   SimpleIGWAttach:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       InternetGatewayId: !Ref SimpleIGW
       VpcId: !Ref SimpleVPC
 
-  SimpleRouteTable:
+  # Network - Route Table
+  PublicSubnetRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref SimpleVPC
 
+  # Network - Routes
   RouteToIGW:
     Type: AWS::EC2::Route
-    DependsOn: AwesomeSiteIGW
+    DependsOn: SimpleIGW
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref SimpleIGW
-      RouteTableId: !Ref SimpleRouteTable
+      RouteTableId: !Ref PublicSubnetRouteTable
 
   Public1SNRouteTableCon:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PublicSubnet1
-      RouteTableId: !Ref SimpleRouteTable
+      RouteTableId: !Ref PublicSubnetRouteTable
 
   Public2SNRouteTableCon:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PublicSubnet2
-      RouteTableId: 
-        Ref: 'SimpleRouteTable'
+      RouteTableId: !Ref PublicSubnetRouteTable
 
-  AllowWebAndSSHForSimpleSubnet:
+  AllowWebAndSSHForPublicSubnet:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: "Allow Web And SSH For Public Subnet Instances" # Required
-      GroupName: "simple-subnet-sg"
+      GroupName: "simple-publicsubnet-sg"
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
@@ -89,49 +96,79 @@ Resources:
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
-        # - IpProtocol: -1
-        #   SourceSecurityGroupId: !Ref AllowWebAndSSHForPublicSubnet
       VpcId: !Ref SimpleVPC
+  AllowLocalInPublicSubnetSG:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AllowWebAndSSHForPublicSubnet
+      IpProtocol: -1 # Required
+      SourceSecurityGroupId: !Ref AllowWebAndSSHForPublicSubnet
 
+  # Compute - EC2 Instaces
   SimpleWebServer1:
     Type: AWS::EC2::Instance
     Properties:
-      KeyName: # อันนี้ใส่ไรนะ
-      ImageId: ami-7a11e213
+      InstanceType: "t2.micro"
+      SubnetId: !Ref PublicSubnet1
+      
+      ImageId: !Ref AmazonLinuxFreeTierAMI
+
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 10
+      
+      SecurityGroupIds:
+        - !Ref AllowWebAndSSHForPublicSubnet
+      KeyName: vockey
+      
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          yum update -y
+          amazon-linux-extras install -y lamp-mariadb10.2-php7.2 php7.2
+          yum install -y httpd git
+          systemctl start httpd
+          systemctl enable httpd
+          usermod -a -G apache ec2-user
+          chown -R ec2-user:apache /var/www
+          chmod 2775 /var/www
+          find /var/www -type d -exec chmod 2775 {} \;
+          find /var/www -type f -exec chmod 0664 {} \;
       Tags:
         - Key: Name
-          Value: Webserver 1
-      NetworkInterfaces:
-        - AssociatePublicIpAddress: 'true'
-          DeviceIndex: '0'
-          GroupSet:
-            - !Ref AllowWebAndSSHForSimpleSubnet
-          SubnetId:
-            Ref: 'PublicSubnet1'
+          Value: Simple-Webserver-1
   
-    SimpleWebServer2:
-      Type: AWS::EC2::Instance
-      Properties:
-        KeyName: # อันนี้ใส่ไรนะ
-        ImageId: ami-7a11e213
-        Tags:
-          - Key: Name
-            Value: Webserver 2
-        NetworkInterfaces:
-          - AssociatePublicIpAddress: 'true'
-            DeviceIndex: '0'
-            GroupSet:
-              - !Ref AllowWebAndSSHForSimpleSubnet
-            SubnetId:
-              Ref: 'PublicSubnet2'
-
-  MyLoadBalancer:
-    Type: AWS::ElasticLoadBalancing::LoadBalancer
+  SimpleWebServer2:
+    Type: AWS::EC2::Instance
     Properties:
-      AvailabilityZones:
-        - "us-east-1a"
-        - "us-east-1b"
-      Listeners:
-        - LoadBalancerPort: "80"
-          InstancePort: "80"
-          Protocol: HTTP
+      InstanceType: "t2.micro"
+      SubnetId: !Ref PublicSubnet2
+        
+      ImageId: !Ref AmazonLinuxFreeTierAMI
+        
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 10
+        
+      SecurityGroupIds:
+        - !Ref AllowWebAndSSHForPublicSubnet
+      KeyName: vockey
+
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          yum update -y
+          amazon-linux-extras install -y lamp-mariadb10.2-php7.2 php7.2
+          yum install -y httpd git
+          systemctl start httpd
+          systemctl enable httpd
+          usermod -a -G apache ec2-user
+          chown -R ec2-user:apache /var/www
+          chmod 2775 /var/www
+          find /var/www -type d -exec chmod 2775 {} \;
+          find /var/www -type f -exec chmod 0664 {} \;
+      Tags:
+        - Key: Name
+          Value: Simple-Webserver-2
