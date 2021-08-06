@@ -140,30 +140,83 @@ Resources:
       IpProtocol: -1 # Required
       SourceSecurityGroupId: !Ref AllowMySQLPrivateSubnet
   
-  # # AWS Intances
-  # # Compute - EC2
-  # WebServer:
-  #   Type: AWS::EC2::Instance
-  #   Properties:
-  #     SecurityGroups:
-  #       - !Ref AllowWebAndSSHForPublicSubnet
-  #       - !Ref AllowLocalInPublicSubnetSG
-  #     KeyName: vockey
-  #     ImageId: ami-7a11e213
-  #     Tags:
-  #       - Key: Name
-  #         Value: My EC2 Instance
+  # AWS Intances
+  # Compute - EC2
+  WebServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: vockey
+      ImageId: ami-7a11e213
+      Tags:
+        - Key: Name
+          Value: My EC2 Instance
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: 'true'
+          DeviceIndex: '0'
+          GroupSet:
+            - !Ref AllowWebAndSSHForPublicSubnet
+            - !Ref AllowLocalInPublicSubnetSG
+          SubnetId:
+            Ref: 'Public1AwesomeSiteSN'
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          yum update -y
+          amazon-linux-extras install -y lamp-mariadb10.2-php7.2 php7.2
+          yum install -y httpd git
+          systemctl start httpd
+          systemctl enable httpd
+          usermod -a -G apache ec2-user
+          chown -R ec2-user:apache /var/www
+          chmod 2775 /var/www
+          find /var/www -type d -exec chmod 2775 {} \;
+          find /var/www -type f -exec chmod 0664 {} \;
+          git clone https://github.com/huayong1678/Architecting-in-Public-Cloud.git
+          cd Architecting-in-Public-Cloud/Week\ 3\ -\ Compute\&Database/
+          cp ./SampleApp.php /var/www/html/
+          cp ./drop.php /var/www/html/
+          mkdir /var/www/inc
+          cp ./dbinfo.inc /var/www/inc/
 
   # ASG - Auto Scaling group with load balancing
 
   LaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
-      ImageId: ami-02354e95b39ca8dec
+      ImageId: ami-0c2b8ca1dad447f8a
+      InstanceInitiatedShutdownBehavior: stop
       SecurityGroups:
-      - Ref: logicalName
-      - myExistingEC2SecurityGroup
-      InstanceType: t3.micro
+      - !Ref AllowWebAndSSHForPublicSubnet
+      - !Ref AllowLocalInPublicSubnetSG
+      InstanceType: t2.micro
+
+  EC2TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 15
+      HealthyThresholdCount: 5
+      Matcher:
+        HttpCode: '200'
+      Name: EC2TargetGroup
+      Port: 80
+      Protocol: HTTP
+      TargetGroupAttributes:
+      - Key: deregistration_delay.timeout_seconds
+        Value: '20'
+      Targets:
+      - Id:
+          Ref: WebServer
+        Port: 80
+      UnhealthyThresholdCount: 3
+      VpcId:
+        Ref: 'AwesomeSiteVPC'
+      Tags:
+      - Key: Name
+        Value: EC2TargetGroup
+      - Key: Port
+        Value: 80
 
   AutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
@@ -172,3 +225,9 @@ Resources:
         - !Ref Public1AwesomeSiteSN
         - !Ref Public2AwesomeSiteSN
       LaunchConfigurationName: !Ref LaunchConfig
+      MinSize: '1'
+      MaxSize: '4'
+      HealthCheckGracePeriod: 300
+      MaxInstanceLifetime: 2592000
+      TargetGroupARNs:
+        - !Ref EC2TargetGroup
