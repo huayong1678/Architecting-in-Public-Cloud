@@ -36,10 +36,9 @@ Resources:
     Properties:
       AvailabilityZone: "us-east-1b"
       CidrBlock: "10.0.1.0/24" # Required
-      MapPublicIpOnLaunch: true
       Tags:
         - Key: "Name"
-          Value: "public-subnet-1"
+          Value: "public-subnet-2"
       VpcId: !Ref SimpleVPC # Required
 
   # Network - Internet Gateway
@@ -143,7 +142,6 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: "t2.micro"
-      SubnetId: !Ref PublicSubnet2
         
       ImageId: !Ref AmazonLinuxFreeTierAMI
         
@@ -152,9 +150,15 @@ Resources:
           Ebs:
             VolumeSize: 10
         
-      SecurityGroupIds:
-        - !Ref AllowWebAndSSHForPublicSubnet
       KeyName: vockey
+
+      NetworkInterfaces: 
+        - AssociatePublicIpAddress: true
+          DeviceIndex: 0
+          DeleteOnTermination: true
+          GroupSet: 
+            - !Ref AllowWebAndSSHForPublicSubnet
+          SubnetId: !Ref PublicSubnet2
 
       UserData:
         Fn::Base64: !Sub |
