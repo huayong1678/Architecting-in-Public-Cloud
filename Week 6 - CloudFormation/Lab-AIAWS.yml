@@ -139,3 +139,24 @@ Resources:
       GroupId: !Ref AllowMySQLPrivateSubnet
       IpProtocol: -1 # Required
       SourceSecurityGroupId: !Ref AllowMySQLPrivateSubnet
+  
+  # AWS Intances
+  # Compute - EC2
+  WebServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      SecurityGroups:
+        - !Ref AllowWebAndSSHForPublicSubnet
+        - !Ref AllowLocalInPublicSubnetSG
+      KeyName: vockey
+      ImageId: ami-7a11e213
+
+      
+  # Storage - S3
+  MyS3Bucket:
+    Type: AWS::S3::Bucket
+      Properties:
+        AccessControl: PublicRead
+        WebsiteConfiguration:
+          IndexDocument: index.html
+          ErrorDocument: error.html
