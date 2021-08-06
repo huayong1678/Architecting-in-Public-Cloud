@@ -140,23 +140,35 @@ Resources:
       IpProtocol: -1 # Required
       SourceSecurityGroupId: !Ref AllowMySQLPrivateSubnet
   
-  # AWS Intances
-  # Compute - EC2
-  WebServer:
-    Type: AWS::EC2::Instance
-    Properties:
-      SecurityGroups:
-        - !Ref AllowWebAndSSHForPublicSubnet
-        - !Ref AllowLocalInPublicSubnetSG
-      KeyName: vockey
-      ImageId: ami-7a11e213
+  # # AWS Intances
+  # # Compute - EC2
+  # WebServer:
+  #   Type: AWS::EC2::Instance
+  #   Properties:
+  #     SecurityGroups:
+  #       - !Ref AllowWebAndSSHForPublicSubnet
+  #       - !Ref AllowLocalInPublicSubnetSG
+  #     KeyName: vockey
+  #     ImageId: ami-7a11e213
+  #     Tags:
+  #       - Key: Name
+  #         Value: My EC2 Instance
 
-      
-  # Storage - S3
-  MyS3Bucket:
-    Type: AWS::S3::Bucket
-      Properties:
-        AccessControl: PublicRead
-        WebsiteConfiguration:
-          IndexDocument: index.html
-          ErrorDocument: error.html
+  # ASG - Auto Scaling group with load balancing
+
+  LaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId: ami-02354e95b39ca8dec
+      SecurityGroups:
+      - Ref: logicalName
+      - myExistingEC2SecurityGroup
+      InstanceType: t3.micro
+
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier:
+        - !Ref Public1AwesomeSiteSN
+        - !Ref Public2AwesomeSiteSN
+      LaunchConfigurationName: !Ref LaunchConfig
