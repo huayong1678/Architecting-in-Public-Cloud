@@ -123,7 +123,7 @@ Resources:
             GroupSet:
               - !Ref AllowWebAndSSHForSimpleSubnet
             SubnetId:
-              Ref: 'PublicSubnet1'
+              Ref: 'PublicSubnet2'
 
   MyLoadBalancer:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
