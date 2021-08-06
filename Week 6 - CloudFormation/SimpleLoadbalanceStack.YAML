@@ -1,0 +1,4 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "A Sample YAML for CloudFormation in Module 6"
+
+Resources:
