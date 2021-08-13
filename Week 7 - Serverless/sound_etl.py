@@ -1,3 +1,4 @@
+import os
 import convert_audio as ca
 import s3_access as s3a
 import botocore
@@ -6,7 +7,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 # ในกรณีที่ต้องการเปลี่ยนชื่อ bucket
-mpeg_bucket, wav_bucket = 'mpeg-sound', 'wav-sound'
+mpeg_bucket, wav_bucket = 'audiotrans-orig', 'audiotrans-converted'
 
 
 def sound_etl():
@@ -30,8 +31,15 @@ def sound_etl():
         mpeg_list = ca.create_convert_list(s3, mpeg_bucket)
         try:
             print("Downloading file(s)...")
+
+            try:
+                os.makedirs('/tmp/mpeg-sound')
+                print("Directory Created")
+            except FileExistsError:
+                print("Directory Existed")
+
             for i in range(len(mpeg_list)):
-                des, src = "mpeg-sound/" + mpeg_list[i], mpeg_list[i]
+                des, src = "/tmp/mpeg-sound/" + mpeg_list[i], mpeg_list[i]
                 # บรรทัดนี้จะเป็นคำสั่งในการโหลดไฟล์จาก S3
                 s3.Bucket(mpeg_bucket).download_file(src, des)
             print("Download Completed.")
@@ -59,10 +67,10 @@ def sound_etl():
         try:
             print("Converting file(s)...")
             wav_list = ca.audio_convert(mpeg_list)
+            load_audio(wav_list)
             print("Convert Completed.")
         except:
             print("Convert Error.")
-        load_audio(wav_list)
 
     def load_audio(wav_list):
         """
@@ -81,7 +89,7 @@ def sound_etl():
         try:
             print("Uploading file(s)...")
             for i in range(len(wav_list)):
-                src = "wav-sound/" + wav_list[i]
+                src = "/tmp/wav-sound/" + wav_list[i]
                 # บรรทัดนี้จะเป็นคำสั่งในการโหลดไฟล์ขึ้น S3
                 s3.Bucket(wav_bucket).upload_file(src, wav_list[i])
             print("Upload Completed.")

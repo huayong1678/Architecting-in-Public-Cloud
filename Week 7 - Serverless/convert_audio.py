@@ -1,3 +1,4 @@
+import os
 import sys
 from os import path
 from pydub import AudioSegment
@@ -31,9 +32,14 @@ def audio_convert(src):
         src: เป็นรายชื่อของไฟล์ที่ต้องการจะแปลง
     """
     wav_list=[]
+    try:
+        os.makedirs('/tmp/wav-sound')
+        print("Directory Created")
+    except FileExistsError:
+        print("Directory Existed")
     for i in range(1, len(src)+1):
-        dst = "wav-sound/file_" + str(i) + ".wav"
+        dst = "/tmp/wav-sound/file_" + str(i) + ".wav"
         wav_list.append("file_" + str(i) + ".wav")
-        sound = AudioSegment.from_mp3('mpeg-sound/' + src[i-1])
+        sound = AudioSegment.from_mp3('/tmp/mpeg-sound/' + src[i-1])
         sound.export(dst, format="wav")
     return wav_list
