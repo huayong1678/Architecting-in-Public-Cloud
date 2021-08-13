@@ -1,5 +1,5 @@
 import boto3
-import getpass
+
 def s3_conn():
     """
     เชื่อมต่อกับ AWS Resource ผ่าน module boto3 โดยจะต้องมีการระบุ Access key และ Secret key และมีการระบุ region us-east-2 เป็นค่าเริ่มต้น
@@ -11,14 +11,10 @@ def s3_conn():
     Notes:
         ดูข้อมูลเพิ่มเติมได้ที่ https://boto3.amazonaws.com/v1/documentation/api/latest/guide/resources.html
     """
-    access_key = input("Please Provide Access Key: ")
-    secret_key = getpass.getpass("Please Provide Secret Key: ")
-    region = input("Please Provide AWS Region Eg. 'us-east-2': ",)
+    region = "us-east-1"
     s3 = boto3.resource(
         service_name='s3',
-        region_name=region,
-        aws_access_key_id=access_key,
-        aws_secret_access_key=secret_key
+        region_name=region
     )
     print("Connection Complete.")
     return s3
