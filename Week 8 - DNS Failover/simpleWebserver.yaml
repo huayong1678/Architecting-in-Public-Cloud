@@ -1,0 +1,123 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "A Simple Webserver Stack for CF"
+Parameters:
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+    ConstraintDescription: must be a valid EC2 instance type.
+Mappings:
+  RegionMap:
+    us-east-1:
+      "HVM64": "ami-0c2b8ca1dad447f8a"
+    us-west-2:
+      "HVM64": "ami-083ac7c7ecf9bb9b0"
+Resources:
+  simpleVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "10.0.0.0/16" # Required
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: "SimpleStack"
+  simpleIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: "Name"
+          Value: "simple-internetgateway"
+  simpleIGWAttach:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref simpleIGW
+      VpcId: !Ref simpleVPC
+  simpleSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: "10.0.0.0/24" # Required
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: "simple-subnet"
+      VpcId: !Ref simpleVPC # Required
+  simpleSubnetRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref simpleVPC
+  RouteToIGW:
+    Type: AWS::EC2::Route
+    DependsOn: simpleIGW
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref simpleIGW
+      RouteTableId: !Ref simpleSubnetRouteTable
+  simpleSNRouteTableCon:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref simpleSubnet
+      RouteTableId: !Ref simpleSubnetRouteTable
+  AllowWebAndSSHForPublicSubnet:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Allow Web And SSH For Public Subnet Instances" # Required
+      GroupName: "simple-public-subnet-sg"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      VpcId: !Ref simpleVPC
+  AllowLocalInPublicSubnetSG:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AllowWebAndSSHForPublicSubnet
+      IpProtocol: -1 # Required
+      SourceSecurityGroupId: !Ref AllowWebAndSSHForPublicSubnet
+  
+
+  simpleWebserver:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref simpleSubnet
+      ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", HVM64]
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 10
+
+      SecurityGroupIds:
+        - !Ref AllowWebAndSSHForPublicSubnet
+      # KeyName: vockey
+
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          yum update -y
+          amazon-linux-extras install -y lamp-mariadb10.2-php7.2 php7.2
+          yum install -y httpd git
+          systemctl start httpd
+          systemctl enable httpd
+          usermod -a -G apache ec2-user
+          chown -R ec2-user:apache /var/www
+          chmod 2775 /var/www
+          find /var/www -type d -exec chmod 2775 {} \;
+          find /var/www -type f -exec chmod 0664 {} \;
+          echo "<h1>EC2:1</h1>" > /var/www/html/test.html
+
+      Tags:
+        - Key: Name
+          Value: Simple-Webserver
+
+Outputs:
+  InstanceIP:
+    Description: "EC2 IP address"
+    Value: !GetAtt simpleWebserver.PublicIp
